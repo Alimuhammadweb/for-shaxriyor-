@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Muzik. - Ultimate Bug-Free</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        /* === AURORA (MUZDEK SUYUQLIK) FON === */
+        @keyframes auroraMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+        :root {
+            --text-main: #ffffff; --text-muted: #9ca3af; --accent: #1db954; 
+            --glass-bg: rgba(0, 0, 0, 0.45); --glass-border: rgba(255, 255, 255, 0.08); --glass-hover: rgba(255, 255, 255, 0.05);
+        }
+
+        body.dark-mode {
+            background: linear-gradient(-45deg, #09121a, #1a2a3a, #112240, #0a0a0a); background-size: 400% 400%; animation: auroraMove 15s ease infinite;
+        }
+        body.light-mode {
+            --text-main: #111827; --text-muted: #4b5563; --accent: #2563eb;
+            --glass-bg: rgba(255, 255, 255, 0.55); --glass-border: rgba(255, 255, 255, 0.6); --glass-hover: rgba(0, 0, 0, 0.03);
+            background: linear-gradient(-45deg, #e0f2fe, #bae6fd, #e0e7ff, #f3e8ff); background-size: 400% 400%; animation: auroraMove 15s ease infinite;
+        }
+        body.evening-mode {
+            --text-main: #ffffff; --text-muted: #e9d5ff; --accent: #d946ef;
+            --glass-bg: rgba(30, 10, 40, 0.5); --glass-border: rgba(255, 255, 255, 0.12); --glass-hover: rgba(255, 255, 255, 0.05);
+            background: linear-gradient(-45deg, #2e1065, #4c1d95, #831843, #171717); background-size: 400% 400%; animation: auroraMove 15s ease infinite;
+        }
+
+        body { font-family: 'Inter', sans-serif; color: var(--text-main); overflow: hidden; }
+
+        .glass-panel {
+            background: var(--glass-bg); backdrop-filter: blur(30px) saturate(180%); -webkit-backdrop-filter: blur(30px) saturate(180%);
+            border: 1px solid var(--glass-border); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15); transition: background 0.4s ease, border-color 0.4s ease;
+        }
+        .glass-input { background: var(--glass-hover); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); transition: border-color 0.3s; }
+        .glass-input:focus { border-color: var(--accent); outline: none; }
+        
+        .nav-item { transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1); cursor: pointer; color: var(--text-muted); }
+        .nav-item:hover { color: var(--text-main); transform: translateX(5px); }
+        .nav-item.active { color: var(--accent); transform: translateX(5px); font-weight: 600; filter: drop-shadow(0 0 8px var(--accent)); }
+
+        .song-card { background: var(--glass-hover); border: 1px solid transparent; border-radius: 12px; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .song-card:hover { background: var(--glass-border); transform: translateY(-5px); border-color: var(--glass-border); box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+
+        .loader { border: 3px solid var(--glass-border); border-top: 3px solid var(--accent); border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto; display: none; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* TOAST (Bildirishnoma) CSS */
+        #toast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); opacity: 0;
+            background: var(--accent); color: #fff; padding: 12px 24px; border-radius: 50px; font-weight: 600; font-size: 14px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4); z-index: 1000; transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            display: flex; align-items: center; gap: 8px;
+        }
+        #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        #toast.error { background: #ef4444; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; opacity: 0.3; }
+        .hidden { display: none !important; }
+        
+        .btn-press { transition: transform 0.15s, filter 0.3s; cursor: pointer; }
+        .btn-press:active { transform: scale(0.85); }
+        .text-accent { color: var(--accent) !important; }
+        .bg-accent { background-color: var(--accent) !important; color: #fff; }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col p-2 md:p-3 gap-3 dark-mode">
+
+    <!-- TOAST (Bildirishnoma) -->
+    <div id="toast"><i class="fa-solid fa-circle-check"></i> <span id="toast-text">Saqlandi</span></div>
+
+    <!-- TEPADAGI BAR -->
+    <header class="glass-panel h-16 rounded-2xl flex justify-between items-center px-4 md:px-6 shrink-0 z-20">
+        <div class="flex items-center gap-3 text-xl font-bold tracking-widest text-main w-1/4">
+            <i class="fa-solid fa-compact-disc text-accent animate-spin-slow"></i> <span class="hidden md:block">MUZIK.</span>
+        </div>
+
+        <div class="flex-1 max-w-xl mx-4 relative group">
+            <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-muted"></i>
+            <input type="text" id="searchInput" class="w-full glass-input rounded-full py-2.5 pl-11 pr-4 text-sm md:text-base text-main placeholder-muted shadow-inner" data-i18n-placeholder="searchPlaceholder">
+        </div>
+
+        <div class="flex items-center justify-end gap-3 w-1/4">
+            <button id="btn-theme" class="w-10 h-10 rounded-full glass-input flex items-center justify-center btn-press hover:text-accent">
+                <i class="fa-solid fa-moon" id="theme-icon"></i>
+            </button>
+            <button id="btn-lang" class="w-10 h-10 rounded-full bg-accent text-white flex items-center justify-center btn-press shadow-[0_0_15px_rgba(29,185,84,0.4)]">
+                <span class="font-bold text-xs" id="lang-indicator">UZ</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- ASOSIY 3 TA USTUNLI QISM -->
+    <main class="flex-1 flex gap-3 overflow-hidden z-10">
+        <!-- CHAP: Menyular -->
+        <aside class="glass-panel w-16 md:w-24 rounded-2xl flex flex-col items-center py-6 shrink-0 gap-8 text-2xl">
+            <div data-tab="home" class="nav-item active flex flex-col items-center gap-1.5 w-full">
+                <i class="fa-solid fa-house"></i>
+                <span class="text-[10px] font-semibold hidden md:block" data-i18n="navHome">Bosh</span>
+            </div>
+            <div data-tab="search" class="nav-item flex flex-col items-center gap-1.5 w-full">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <span class="text-[10px] font-semibold hidden md:block" data-i18n="navSearch">Izlash</span>
+            </div>
+            <div data-tab="library" class="nav-item flex flex-col items-center gap-1.5 mt-4 w-full border-t border-white/5 pt-6">
+                <i class="fa-solid fa-bookmark"></i>
+                <span class="text-[10px] font-semibold hidden md:block" data-i18n="navLib">Kutubxona</span>
+            </div>
+        </aside>
+
+        <!-- O'RTA: Kontent -->
+        <section class="glass-panel flex-1 rounded-2xl overflow-y-auto p-5 md:p-8 relative">
+            <div id="view-home" class="view-section fade-in">
+                <h3 class="text-3xl font-bold mb-6 tracking-tight text-main" data-i18n="homeTitle">Tavsiya etilganlar</h3>
+                <div class="glass-input p-6 rounded-2xl inline-block border-l-4 border-l-accent">
+                    <p class="text-muted" data-i18n="homeDesc">Qidiruv orqali eng sara musiqalarni toping.</p>
+                </div>
+            </div>
+
+            <div id="view-search" class="view-section hidden fade-in">
+                <h3 class="text-3xl font-bold mb-6 tracking-tight text-main flex items-center gap-4">
+                    <span data-i18n="searchTitle">Qidiruv natijalari</span>
+                    <div id="loader" class="loader"></div>
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6" id="search-container">
+                    <div class="col-span-full mt-10 text-center text-muted" data-i18n="searchEmpty">Musiqalar shu yerda ko'rinadi...</div>
+                </div>
+            </div>
+
+            <div id="view-library" class="view-section hidden fade-in">
+                <h3 class="text-3xl font-bold mb-6 tracking-tight text-main" data-i18n="libTitle">Kutubxona</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6" id="library-container"></div>
+            </div>
+        </section>
+
+        <!-- O'NG: Detal Panel -->
+        <aside id="right-sidebar" class="glass-panel w-72 lg:w-80 rounded-2xl shrink-0 p-5 overflow-y-auto flex-col hidden md:flex items-center text-center">
+            <div id="details-placeholder" class="text-muted flex flex-col items-center justify-center h-full opacity-50">
+                <i class="fa-solid fa-headphones-simple text-6xl mb-4"></i>
+                <p class="text-sm font-medium" data-i18n="detailsEmpty">Musiqa tanlang</p>
+            </div>
+            <div id="details-content" class="w-full flex flex-col items-center hidden fade-in pb-4">
+                <div class="w-full aspect-square rounded-2xl overflow-hidden shadow-2xl mb-5 relative group shrink-0 border border-white/5">
+                    <img id="detail-img" src="" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+                </div>
+                <h2 id="detail-title" class="text-xl font-bold mb-1 text-main tracking-tight leading-tight w-full truncate">Nomi</h2>
+                <p id="detail-artist" class="text-sm text-accent font-medium mb-5 w-full truncate">Artist</p>
+                
+                <div class="flex items-center gap-8 mb-6 text-2xl text-muted">
+                    <i class="fa-solid fa-heart btn-press hover:text-red-500 transition-colors" onclick="this.classList.toggle('text-red-500')"></i>
+                    <!-- SAQLASH (O'NG PANELDA) -->
+                    <i class="fa-solid fa-bookmark btn-press hover:text-accent transition-all" id="sidebar-btn-save" onclick="toggleSaveActive()"></i>
+                </div>
+                <div class="w-full text-left mb-6 relative pl-3 border-l-2 border-accent bg-white/5 py-2 rounded-r-lg">
+                    <p id="detail-quote" class="text-muted italic text-xs font-medium">"Motivatsiya"</p>
+                </div>
+                <div class="w-full text-left border-t border-white/5 pt-5 mb-5">
+                    <h4 class="font-bold mb-3 text-[11px] uppercase tracking-wider text-main opacity-80" data-i18n="commentsTitle"><i class="fa-regular fa-comment mr-1"></i> Fikrlar</h4>
+                    <div class="flex gap-2 mb-3">
+                        <input type="text" id="comment-input" class="flex-1 glass-input rounded-md px-3 py-2 text-xs text-main" data-i18n-placeholder="commentPlace">
+                        <button id="btn-comment" class="bg-accent text-white px-3 py-2 rounded-md btn-press text-xs shadow-md"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                    <div id="comments-list" class="flex flex-col gap-2 max-h-32 overflow-y-auto pr-1"></div>
+                </div>
+                <div class="w-full text-left border-t border-white/5 pt-5">
+                    <h4 class="font-bold mb-3 text-[11px] uppercase tracking-wider text-main opacity-80" data-i18n="relatedTitle"><i class="fa-solid fa-list-music mr-1"></i> Boshqa taronalar</h4>
+                    <div id="related-list" class="flex flex-col gap-2"></div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- PASTKI PLEYER -->
+    <footer class="glass-panel h-20 md:h-[90px] rounded-2xl shrink-0 px-4 md:px-6 flex items-center justify-between z-20">
+        <div class="flex items-center gap-3 w-[45%] md:w-1/3">
+            <img id="player-img" src="https://via.placeholder.com/50" class="w-12 h-12 rounded-md shadow-md object-cover hidden sm:block border border-white/10">
+            <div class="overflow-hidden flex-1">
+                <h4 id="player-title" class="font-bold text-sm text-main truncate" data-i18n="notSelected">Tanlanmagan</h4>
+                <p id="player-artist" class="text-xs text-muted truncate mt-0.5" data-i18n="unknown">Noma'lum</p>
+            </div>
+            <!-- SAQLASH (PLEYERDA HAMMA EKRAN UCHUN KO'RINADI) -->
+            <button class="ml-1 p-2 btn-press" onclick="toggleSaveActive()">
+                <i class="fa-solid fa-bookmark text-muted text-lg transition-colors hover:text-accent" id="player-btn-save"></i>
+            </button>
+        </div>
+
+        <div class="flex flex-col items-center w-[40%] md:w-1/3">
+            <div class="flex items-center gap-5 mb-2">
+                <button class="text-muted hover:text-main text-base btn-press hidden md:block"><i class="fa-solid fa-backward-step"></i></button>
+                <button id="btn-play-pause" class="bg-main text-inverse w-10 h-10 rounded-full flex items-center justify-center btn-press shadow-[0_4px_15px_rgba(255,255,255,0.2)]">
+                    <i class="fa-solid fa-play ml-0.5 text-sm text-black" id="play-icon"></i>
+                </button>
+                <button class="text-muted hover:text-main text-base btn-press hidden md:block"><i class="fa-solid fa-forward-step"></i></button>
+            </div>
+            <div class="w-full max-w-sm flex items-center gap-3 text-[10px] font-medium text-muted">
+                <span id="time-current">0:00</span>
+                <div class="flex-1 h-1 bg-white/20 rounded-full relative cursor-pointer" id="progress-container">
+                    <div id="progress-bar" class="h-full bg-accent w-0 absolute left-0 top-0 rounded-full transition-all duration-100"></div>
+                </div>
+                <span id="time-total">0:30</span>
+            </div>
+        </div>
+
+        <div class="hidden md:flex w-1/3 justify-end items-center gap-3 text-muted">
+            <i class="fa-solid fa-volume-high text-xs"></i>
+            <input type="range" id="volume-slider" class="w-20 md:w-24 h-1 bg-white/20 rounded-full appearance-none accent-accent cursor-pointer" min="0" max="1" step="0.1" value="1">
+        </div>
+    </footer>
+
+    <script>
+        // === ARXITEKTURA VA STATE ===
+        const State = {
+            lang: localStorage.getItem('appLang') || 'uz',
+            themeIndex: parseInt(localStorage.getItem('appTheme')) || 0,
+            savedSongs: JSON.parse(localStorage.getItem('appSavedSongs')) || [],
+            activeSong: null,
+            isPlaying: false
+        };
+        const themes = ['dark-mode', 'light-mode', 'evening-mode'];
+        const audio = new Audio();
+
+        // === LUG'AT ===
+        const Dictionary = {
+            navHome: { uz: "Bosh", en: "Home" }, navSearch: { uz: "Izlash", en: "Search" }, navLib: { uz: "Kutubxona", en: "Library" },
+            homeTitle: { uz: "Tavsiya etilganlar", en: "Made For You" }, homeDesc: { uz: "Qidiruv orqali eng sara musiqalarni toping.", en: "Find the best music through search." },
+            searchTitle: { uz: "Qidiruv natijalari", en: "Search Results" }, searchEmpty: { uz: "Musiqalar shu yerda ko'rinadi...", en: "Songs will appear here..." }, searchPlaceholder: { uz: "Musiqa nomini yozing...", en: "Search for music..." },
+            libTitle: { uz: "Kutubxona", en: "Library" }, libEmpty: { uz: "Saqlangan musiqalar yo'q. (🔖)", en: "No saved music. (🔖)" },
+            detailsEmpty: { uz: "Musiqa tanlang", en: "Select a song" }, commentsTitle: { uz: "<i class='fa-regular fa-comment mr-1'></i> Fikrlar", en: "<i class='fa-regular fa-comment mr-1'></i> Comments" }, commentPlace: { uz: "Fikr yozing...", en: "Write comment..." },
+            relatedTitle: { uz: "<i class='fa-solid fa-list-music mr-1'></i> Boshqa taronalar", en: "<i class='fa-solid fa-list-music mr-1'></i> Related songs" },
+            notSelected: { uz: "Tanlanmagan", en: "Not Selected" }, unknown: { uz: "Noma'lum", en: "Unknown" }, me: { uz: "Siz 👤", en: "You 👤" },
+            saved: { uz: "✅ Kutubxonaga saqlandi!", en: "✅ Saved to Library!" }, removed: { uz: "❌ Kutubxonadan olib tashlandi!", en: "❌ Removed from Library!" }
+        };
+
+        const quotes = [
+            { uz: "Musiqa qalbni davolaydi.", en: "Music heals the soul." }, { uz: "Orzularing sari intil!", en: "Strive for your dreams!" }, { uz: "Hech qachon taslim bo'lma.", en: "Never give up." }
+        ];
+
+        // === INIT ===
+        function initApp() {
+            applyTheme(); updateUI_Lang(); renderLibrary();
+            
+            document.getElementById('btn-lang').addEventListener('click', () => {
+                State.lang = State.lang === 'uz' ? 'en' : 'uz';
+                localStorage.setItem('appLang', State.lang); updateUI_Lang();
+            });
+            document.getElementById('btn-theme').addEventListener('click', () => {
+                State.themeIndex = (State.themeIndex + 1) % themes.length;
+                localStorage.setItem('appTheme', State.themeIndex); applyTheme();
+            });
+            document.getElementById('btn-play-pause').addEventListener('click', togglePlay);
+            document.getElementById('volume-slider').addEventListener('input', (e) => audio.volume = e.target.value);
+            document.getElementById('searchInput').addEventListener('input', handleSearch);
+            document.getElementById('btn-comment').addEventListener('click', addComment);
+            
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                    e.currentTarget.classList.add('active');
+                    const tab = e.currentTarget.getAttribute('data-tab');
+                    document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden'));
+                    document.getElementById('view-' + tab).classList.remove('hidden');
+                });
+            });
+
+            audio.addEventListener('timeupdate', () => {
+                if(audio.duration) {
+                    document.getElementById('progress-bar').style.width = (audio.currentTime / audio.duration) * 100 + '%';
+                    let s = Math.floor(audio.currentTime);
+                    document.getElementById('time-current').innerText = "0:" + (s < 10 ? "0"+s : s);
+                }
+            });
+            audio.addEventListener('ended', () => {
+                State.isPlaying = false; document.getElementById('play-icon').classList.replace('fa-pause', 'fa-play'); document.getElementById('progress-bar').style.width = '0%';
+            });
+        }
+
+        // === TOAST NOTIFICATION ===
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-text').innerText = msg;
+            toast.className = `fixed top-5 left-1/2 -translate-x-1/2 text-white px-6 py-3 rounded-full shadow-2xl z-50 transform -translate-y-20 transition-all duration-300 flex items-center gap-3 font-medium ${isError ? 'bg-red-500' : 'bg-accent'} show`;
+            setTimeout(() => { toast.classList.remove('show'); }, 2500);
+        }
+
+        // === TIL VA MAVZU ===
+        function updateUI_Lang() {
+            document.getElementById('lang-indicator').innerText = State.lang === 'uz' ? 'UZ' : 'EN';
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n'); if (Dictionary[key]) el.innerHTML = Dictionary[key][State.lang];
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder'); if (Dictionary[key]) el.placeholder = Dictionary[key][State.lang];
+            });
+            if(!State.activeSong) {
+                document.getElementById('player-title').innerText = Dictionary.notSelected[State.lang];
+                document.getElementById('player-artist').innerText = Dictionary.unknown[State.lang];
+            } else {
+                document.getElementById('detail-quote').innerText = `"${quotes[State.activeSong.qIndex][State.lang]}"`;
+            }
+            if (document.getElementById('view-library').classList.contains('block')) renderLibrary();
+        }
+        function applyTheme() {
+            document.body.className = `h-screen w-screen flex flex-col p-2 md:p-3 gap-3 ${themes[State.themeIndex]}`;
+            const icon = document.getElementById('theme-icon');
+            icon.className = State.themeIndex === 0 ? 'fa-solid fa-moon' : (State.themeIndex === 1 ? 'fa-solid fa-sun' : 'fa-solid fa-cloud-moon');
+        }
+
+        // === QIDIRUV VA CHIZISH ===
+        let searchTimer;
+        function handleSearch(e) {
+            const query = e.target.value.trim();
+            if(query.length < 2) return;
+            document.querySelector('[data-tab="search"]').click();
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(async () => {
+                const container = document.getElementById('search-container');
+                const loader = document.getElementById('loader');
+                container.innerHTML = ""; loader.style.display = "block";
+                try {
+                    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&limit=25`);
+                    const data = await res.json();
+                    loader.style.display = "none";
+                    renderSongList(data.results, container, true);
+                } catch(err) { loader.style.display = "none"; }
+            }, 600);
+        }
+
+        function renderSongList(arr, container, isApi) {
+            if(!arr || arr.length === 0) {
+                container.innerHTML = `<div class="col-span-full mt-10 text-center text-muted">${Dictionary.searchEmpty[State.lang]}</div>`;
+                return;
+            }
+            let html = "";
+            arr.forEach((song, i) => {
+                const img = isApi ? song.artworkUrl100.replace('100x100bb', '600x600bb') : song.image;
+                const url = isApi ? song.previewUrl : song.url;
+                const title = (isApi ? song.trackName : song.title) || 'Unknown';
+                const artist = (isApi ? song.artistName : song.artist) || 'Unknown';
+                if(!url) return;
+
+                const qIdx = isApi ? (i % quotes.length) : song.qIndex;
+                const safeTitle = title.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                const safeArtist = artist.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                
+                // Qo'shiq ichida TEZKOR SAQLASH tugmasi
+                const isSaved = State.savedSongs.some(s => s.url === url);
+                const bookClass = isSaved ? 'text-accent' : 'text-white';
+
+                html += `
+                    <div class="song-card p-3 md:p-4 cursor-pointer group" onclick="playAndOpen('${url}', '${safeTitle}', '${safeArtist}', '${img}', ${qIdx})">
+                        <div class="relative overflow-hidden rounded-lg mb-3 aspect-square shadow-sm">
+                            <img src="${img}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                            <!-- TEZKOR SAQLASH (KARTDA) -->
+                            <div class="absolute top-2 right-2 z-10 bg-black/50 backdrop-blur-md p-2 rounded-full btn-press" onclick="saveFromIcon(event, this, '${url}', '${safeTitle}', '${safeArtist}', '${img}', ${qIdx})">
+                                <i class="fa-solid fa-bookmark ${bookClass} text-sm"></i>
+                            </div>
+                            <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <i class="fa-solid fa-play text-white text-3xl"></i>
+                            </div>
+                        </div>
+                        <h4 class="font-bold text-xs md:text-sm truncate text-main">${title}</h4>
+                        <p class="text-[10px] md:text-xs text-muted truncate mt-1">${artist}</p>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // === SAQLASH MANTIG'I ===
+        function saveFromIcon(e, el, url, title, artist, image, qIndex) {
+            e.stopPropagation(); // Bosganda qoshiq chalib yubormasligi uchun himoya
+            const song = { url, title, artist, image, qIndex };
+            const idx = State.savedSongs.findIndex(s => s.url === url);
+            const icon = el.querySelector('i');
+            
+            if(idx > -1) {
+                State.savedSongs.splice(idx, 1);
+                showToast(Dictionary.removed[State.lang], true);
+                if(icon) { icon.classList.remove('text-accent'); icon.classList.add('text-white'); }
+            } else {
+                State.savedSongs.push(song);
+                showToast(Dictionary.saved[State.lang]);
+                if(icon) { icon.classList.add('text-accent'); icon.classList.remove('text-white'); }
+            }
+            
+            localStorage.setItem('appSavedSongs', JSON.stringify(State.savedSongs));
+            updateActiveSaveButtons();
+            if (document.getElementById('view-library').classList.contains('block')) renderLibrary();
+        }
+
+        function toggleSaveActive() {
+            if(!State.activeSong) return;
+            const idx = State.savedSongs.findIndex(s => s.url === State.activeSong.url);
+            if(idx > -1) {
+                State.savedSongs.splice(idx, 1);
+                showToast(Dictionary.removed[State.lang], true);
+            } else {
+                State.savedSongs.push(State.activeSong);
+                showToast(Dictionary.saved[State.lang]);
+            }
+            localStorage.setItem('appSavedSongs', JSON.stringify(State.savedSongs));
+            updateActiveSaveButtons();
+            if (document.getElementById('view-library').classList.contains('block')) renderLibrary();
+            
+            // Agar qidiruv oynasida o'sha kartochka bo'lsa, rangini ham to'g'rilash (optional sync)
+        }
+
+        function updateActiveSaveButtons() {
+            if(!State.activeSong) return;
+            const isSaved = State.savedSongs.some(s => s.url === State.activeSong.url);
+            
+            const btnSidebar = document.getElementById('sidebar-btn-save');
+            const btnPlayer = document.getElementById('player-btn-save');
+            
+            if(isSaved) {
+                if(btnSidebar) btnSidebar.classList.add('text-accent');
+                if(btnPlayer) btnPlayer.classList.add('text-accent');
+                if(btnPlayer) btnPlayer.classList.remove('text-muted');
+            } else {
+                if(btnSidebar) btnSidebar.classList.remove('text-accent');
+                if(btnPlayer) btnPlayer.classList.remove('text-accent');
+                if(btnPlayer) btnPlayer.classList.add('text-muted');
+            }
+        }
+
+        function renderLibrary() {
+            const container = document.getElementById('library-container');
+            if(State.savedSongs.length === 0) {
+                container.innerHTML = `<div class="col-span-full mt-10 text-center text-muted glass-input p-6 rounded-2xl inline-block">${Dictionary.libEmpty[State.lang]}</div>`;
+            } else {
+                // Yangi saqlanganlar birinchi chiqishi uchun reverse()
+                renderSongList(State.savedSongs.slice().reverse(), container, false);
+            }
+        }
+
+        // === PLEYER VA DETAL SAHIFA ===
+        function playAndOpen(url, title, artist, image, qIndex) {
+            State.activeSong = { url, title, artist, image, qIndex };
+            
+            // O'ng panelni yangilash
+            document.getElementById('details-placeholder').classList.add('hidden');
+            document.getElementById('details-content').classList.remove('hidden');
+            document.getElementById('detail-img').src = image;
+            document.getElementById('detail-title').innerText = title;
+            document.getElementById('detail-artist').innerText = artist;
+            document.getElementById('detail-quote').innerText = `"${quotes[qIndex][State.lang]}"`;
+            
+            // Pleyerni yangilash
+            document.getElementById('player-img').src = image;
+            document.getElementById('player-img').classList.remove('hidden');
+            document.getElementById('player-title').innerText = title;
+            document.getElementById('player-artist').innerText = artist;
+            
+            updateActiveSaveButtons();
+            fetchRelated(artist);
+
+            if (audio.src !== url) audio.src = url;
+            audio.play().then(() => {
+                State.isPlaying = true; document.getElementById('play-icon').classList.replace('fa-play', 'fa-pause');
+            });
+        }
+
+        function togglePlay() {
+            if(!audio.src) return;
+            if(State.isPlaying) { audio.pause(); document.getElementById('play-icon').classList.replace('fa-pause', 'fa-play'); } 
+            else { audio.play(); document.getElementById('play-icon').classList.replace('fa-play', 'fa-pause'); }
+            State.isPlaying = !State.isPlaying;
+        }
+
+        // O'xshash musiqa
+        async function fetchRelated(artistName) {
+            const list = document.getElementById('related-list');
+            list.innerHTML = `<div class="text-center text-accent my-3"><i class="fa-solid fa-circle-notch fa-spin"></i></div>`;
+            try {
+                const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(artistName)}&entity=song&limit=6`);
+                const data = await res.json();
+                let html = "";
+                data.results.forEach((song, i) => {
+                    if(!song.previewUrl || song.previewUrl === State.activeSong.url) return;
+                    const img = song.artworkUrl100.replace('100x100bb', '300x300bb');
+                    const safeTitle = song.trackName.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                    const safeArtist = song.artistName.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                    html += `
+                        <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/10 cursor-pointer group" onclick="playAndOpen('${song.previewUrl}', '${safeTitle}', '${safeArtist}', '${img}', ${i % quotes.length})">
+                            <div class="w-10 h-10 shrink-0 shadow-sm relative">
+                                <img src="${song.artworkUrl100}" class="w-full h-full rounded-md object-cover">
+                                <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 rounded-md"><i class="fa-solid fa-play text-white text-xs"></i></div>
+                            </div>
+                            <div class="flex-1 overflow-hidden">
+                                <h5 class="text-xs font-bold text-main truncate">${song.trackName}</h5>
+                                <p class="text-[10px] text-muted truncate">${song.artistName}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+                list.innerHTML = html || `<p class="text-xs text-muted">Boshqa topilmadi.</p>`;
+            } catch(e) { list.innerHTML = ""; }
+        }
+
+        function addComment() {
+            const inp = document.getElementById('comment-input');
+            if(!inp.value.trim()) return;
+            const div = document.createElement('div');
+            div.className = "bg-white/10 p-2.5 rounded-lg text-xs border border-white/5 text-muted shadow-sm fade-in";
+            div.innerHTML = `<span class="font-bold text-main block mb-0.5">${Dictionary.me[State.lang]}</span> ${inp.value}`;
+            document.getElementById('comments-list').prepend(div);
+            inp.value = "";
+        }
+
+        initApp();
+    </script>
+</body>
+</html>
